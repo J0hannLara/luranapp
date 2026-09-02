@@ -23,6 +23,16 @@ class ImageException implements Exception {
   }
 }
 
+// Agregar a lib/core/errors/exceptions.dart
+class LocationException implements Exception {
+  final String message;
+
+  LocationException(this.message);
+
+  @override
+  String toString() => 'LocationException: $message';
+}
+
 class NetworkException implements Exception {
   const NetworkException({this.message});
 
