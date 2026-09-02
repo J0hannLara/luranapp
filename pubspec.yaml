@@ -1,0 +1,30 @@
+name: luranapp
+description: "OfertaLocal - Marketplace de ofertas y remates locales"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  get: ^4.7.2
+  supabase_flutter: ^2.17.2
+  equatable: ^2.0.7
+  intl: ^0.20.2
+  http: ^1.6.0
+  flutter_image_compress: ^2.1.0
+  uuid: ^4.3.3
+  path_provider: ^2.1.2 
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
