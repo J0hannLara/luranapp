@@ -39,57 +39,53 @@ class OnboardingPage extends GetView<AuthController> {
             ),
             const SizedBox(height: 32),
             
-            // Username (no necesita Obx)
+            // Username
             TextField(
               controller: controller.usernameController,
+              textCapitalization: TextCapitalization.none,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Nombre de usuario',
+                prefixIcon: Icon(Icons.alternate_email),
                 border: OutlineInputBorder(),
+                helperText: 'Mínimo 3 caracteres',
               ),
             ),
             const SizedBox(height: 16),
             
-            // País - Solo este widget necesita Obx
-            Obx(() {
-              return DropdownButtonFormField<String>(
-                value: controller.selectedCountryCode.value.isEmpty 
-                    ? null 
-                    : controller.selectedCountryCode.value,
-                decoration: const InputDecoration(
-                  labelText: 'País',
-                  border: OutlineInputBorder(),
-                ),
-                hint: const Text('Selecciona tu país'),
-                items: controller.countries.map((country) {
-                  return DropdownMenuItem<String>(
-                    value: country.code,
-                    child: Text(country.name),
-                  );
-                }).toList(),
-                onChanged: controller.isLoadingCountries.value
-                    ? null
-                    : (value) {
-                        if (value != null) {
-                          controller.selectCountry(value);
-                        }
-                      },
-              );
-            }),
+            // País (texto plano)
+            TextField(
+              controller: controller.paisController,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'País',
+                prefixIcon: Icon(Icons.public),
+                border: OutlineInputBorder(),
+                hintText: 'Ej: Bolivia, Chile, Perú...',
+              ),
+            ),
             const SizedBox(height: 16),
             
-            // Ciudad - Solo este widget necesita Obx
-            Obx(() {
-              return TextField(
-                controller: controller.ciudadController,
-                enabled: controller.selectedCountryCode.value.isNotEmpty,
-                decoration: const InputDecoration(
-                  labelText: 'Ciudad',
-                  border: OutlineInputBorder(),
-                ),
-              );
-            }),
+            // Ciudad (texto plano)
+            TextField(
+              controller: controller.ciudadController,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) {
+                if (controller.canCompleteOnboarding) {
+                  controller.completeOnboarding();
+                }
+              },
+              decoration: const InputDecoration(
+                labelText: 'Ciudad',
+                prefixIcon: Icon(Icons.location_city),
+                border: OutlineInputBorder(),
+                hintText: 'Ej: La Paz, Santiago, Lima...',
+              ),
+            ),
             
-            // Mensaje de error - Solo este widget necesita Obx
+            // Mensaje de error
             Obx(() {
               if (controller.errorMessage.isEmpty) {
                 return const SizedBox.shrink();
@@ -97,23 +93,47 @@ class OnboardingPage extends GetView<AuthController> {
               
               return Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Text(
-                  controller.errorMessage,
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    controller.errorMessage,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               );
             }),
             
             const SizedBox(height: 24),
             
-            // Botón - Solo este widget necesita Obx
+            // Botón completar - Se actualiza con GetBuilder
+            GetBuilder<AuthController>(
+              id: 'onboarding_button',
+              builder: (controller) {
+                return ElevatedButton(
+                  onPressed: controller.canCompleteOnboarding && !controller.isLoading
+                      ? controller.completeOnboarding 
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Completar perfil'),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            
+            // Botón saltar
             Obx(() {
-              return ElevatedButton(
+              return TextButton(
                 onPressed: controller.isLoading 
                     ? null 
-                    : controller.completeOnboarding,
-                child: const Text('Completar perfil'),
+                    : controller.skipOnboarding,
+                child: const Text('Saltar por ahora'),
               );
             }),
           ],

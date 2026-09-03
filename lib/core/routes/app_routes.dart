@@ -25,6 +25,8 @@ abstract class AppRoutes {
   static const businessReservations = '/business/reservations';
   static const statistics = '/business/statistics';
   static const businessProfile = '/business/profile';
+  static const businessRegister = '/business/register';
+  static const businessStatus = '/business/status/:id';
 
   // Shared detail pages
   static const offerDetail = '/offer/:id';
@@ -34,4 +36,6 @@ abstract class AppRoutes {
   // Business management (TODO en fases posteriores)
   static const createOffer = '/business/offers/create';
   static const editOffer = '/business/offers/:id/edit';
+
+  //business
 }

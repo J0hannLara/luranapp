@@ -11,10 +11,7 @@ import 'package:luranapp/core/services/location_service.dart';
 
 class AuthController extends GetxController with ViewStateMixin {
   final AuthRepositoryInterface _authRepository;
-  final LocationService _locationService;
-
-  AuthController(this._authRepository, {LocationService? locationService})
-    : _locationService = locationService ?? LocationService();
+  AuthController(this._authRepository);
   // Estados para ubicación
   final RxList<Country> countries = <Country>[].obs;
   final RxList<City> filteredCities = <City>[].obs;
@@ -43,15 +40,17 @@ class AuthController extends GetxController with ViewStateMixin {
   bool get isBusiness => currentUser.value?.isBusiness ?? false;
   bool get canCompleteOnboarding {
     return usernameController.text.trim().length >= 3 &&
-        selectedCountryCode.value.isNotEmpty &&
-        selectedCity.value != null;
+        paisController.text.trim().isNotEmpty &&
+        ciudadController.text.trim().isNotEmpty;
   }
 
   @override
   void onInit() {
     super.onInit();
     _initializeAuth();
-    _loadCountries();
+    usernameController.addListener(_updateCanComplete);
+    paisController.addListener(_updateCanComplete);
+    ciudadController.addListener(_updateCanComplete);
   }
 
   @override
@@ -63,69 +62,14 @@ class AuthController extends GetxController with ViewStateMixin {
     usernameController.dispose();
     paisController.dispose();
     ciudadController.dispose();
-    citySearchController.dispose();
-    _locationService.dispose();
     super.onClose();
   }
 
-  Future<void> _loadCountries() async {
-    try {
-      isLoadingCountries.value = true;
-      final loadedCountries = await _locationService.getCountries();
-      countries.value = loadedCountries;
-    } catch (e) {
-      // Si falla la API, cargar países principales manualmente
-      countries.value = _getFallbackCountries();
-    } finally {
-      isLoadingCountries.value = false;
-    }
+  void _updateCanComplete() {
+    // Forzar actualización de la UI cuando cambian los campos
+    update(['onboarding_button']);
   }
 
-  void selectCountry(String countryCode) {
-    selectedCountryCode.value = countryCode;
-    selectedCity.value = null;
-    citySearchController.clear();
-    filteredCities.clear();
-    _loadCities(countryCode);
-  }
-
-  Future<void> _loadCities(String countryCode) async {
-    try {
-      isLoadingCities.value = true;
-      final cities = await _locationService.getCitiesByCountry(countryCode);
-      filteredCities.value = cities;
-    } catch (e) {
-      filteredCities.clear();
-    } finally {
-      isLoadingCities.value = false;
-    }
-  }
-
-  void searchCity(String query) {
-    if (query.trim().length < 2) {
-      filteredCities.clear();
-      return;
-    }
-
-    _searchCitiesDebounced(query.trim());
-  }
-
-  Timer? _debounce;
-  void _searchCitiesDebounced(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      try {
-        isLoadingCities.value = true;
-        final cities = await _locationService.searchCities(query);
-        filteredCities.value = cities;
-      } catch (e) {
-        filteredCities.clear();
-      } finally {
-        isLoadingCities.value = false;
-      }
-    });
-  }
 
   void selectCity(City city) {
     selectedCity.value = city;
@@ -316,13 +260,9 @@ class AuthController extends GetxController with ViewStateMixin {
       return;
     }
 
-    if (!canCompleteOnboarding) {
-      setError('Por favor completa todos los campos');
-      return;
-    }
-
     try {
       setLoading();
+      setError(''); // Limpiar error anterior
 
       final user = currentUser.value;
       if (user == null) {
@@ -332,8 +272,8 @@ class AuthController extends GetxController with ViewStateMixin {
       final updatedUser = await _authRepository.updateUserProfile(
         userId: user.id,
         username: usernameController.text.trim(),
-        pais: _getCountryName(selectedCountryCode.value),
-        ciudad: selectedCity.value!.name,
+        pais: paisController.text.trim(),
+        ciudad: ciudadController.text.trim(),
       );
 
       currentUser.value = updatedUser;
@@ -341,9 +281,8 @@ class AuthController extends GetxController with ViewStateMixin {
 
       // Limpiar campos
       usernameController.clear();
-      citySearchController.clear();
-      selectedCountryCode.value = '';
-      selectedCity.value = null;
+      paisController.clear();
+      ciudadController.clear();
 
       Get.offAllNamed(AppRoutes.customerMain);
     } catch (e) {
@@ -351,63 +290,11 @@ class AuthController extends GetxController with ViewStateMixin {
     }
   }
 
-  String _getCountryName(String countryCode) {
-    final country = countries.firstWhere(
-      (c) => c.code == countryCode,
-      orElse: () => Country(name: countryCode, code: countryCode),
-    );
-    return country.name;
-  }
-
-  List<Country> _getFallbackCountries() {
-    return [
-      Country(
-        name: 'Bolivia',
-        code: 'BO',
-        flag: 'https://flagcdn.com/w320/bo.png',
-      ),
-      Country(
-        name: 'Chile',
-        code: 'CL',
-        flag: 'https://flagcdn.com/w320/cl.png',
-      ),
-      Country(
-        name: 'Perú',
-        code: 'PE',
-        flag: 'https://flagcdn.com/w320/pe.png',
-      ),
-      Country(
-        name: 'Argentina',
-        code: 'AR',
-        flag: 'https://flagcdn.com/w320/ar.png',
-      ),
-      Country(
-        name: 'Colombia',
-        code: 'CO',
-        flag: 'https://flagcdn.com/w320/co.png',
-      ),
-      Country(
-        name: 'México',
-        code: 'MX',
-        flag: 'https://flagcdn.com/w320/mx.png',
-      ),
-      Country(
-        name: 'España',
-        code: 'ES',
-        flag: 'https://flagcdn.com/w320/es.png',
-      ),
-      Country(
-        name: 'Estados Unidos',
-        code: 'US',
-        flag: 'https://flagcdn.com/w320/us.png',
-      ),
-    ];
-  }
-
   void skipOnboarding() {
     // Permitir saltar el onboarding (opcional)
     Get.offAllNamed(AppRoutes.customerMain);
   }
+
 
   Future<void> signOut() async {
     try {

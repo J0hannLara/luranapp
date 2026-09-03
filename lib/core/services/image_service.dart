@@ -11,7 +11,7 @@ class ImageService {
   final _uuid = const Uuid();
   
   // Bucket por defecto para imágenes
-  static const String defaultBucket = 'images';
+  static const String defaultBucket = 'negocios';
   
   // Calidad de compresión WebP (0-100)
   final int webpQuality;
@@ -56,10 +56,12 @@ class ImageService {
   }
   
   /// Sube una imagen al bucket y retorna la URL pública
+  /// El path en el bucket ya NO incluye el tipo de entidad
+  /// porque el bucket ya se llama 'negocios'
   Future<String> uploadImage({
     required File imageFile,
+    required String entityId,    // ID del negocio, oferta, etc.
     String bucket = defaultBucket,
-    String? folder,
     String? fileName,
   }) async {
     try {
@@ -76,13 +78,9 @@ class ImageService {
           ? generatedFileName 
           : '$generatedFileName$fileExtension';
       
-      // 3. Construir la ruta completa en el bucket
-      final String storagePath;
-      if (folder != null && folder.isNotEmpty) {
-        storagePath = '$folder/$finalFileName';
-      } else {
-        storagePath = finalFileName;
-      }
+      // 3. Construir la ruta SIN el nombre del bucket
+      // El bucket ya es 'negocios', así que el path es: {entityId}/{finalFileName}
+      final storagePath = '$entityId/$finalFileName';
       
       // 4. Subir archivo al bucket
       await _client.storage
@@ -90,13 +88,15 @@ class ImageService {
           .upload(
             storagePath,
             webpFile,
-            fileOptions: const FileOptions(
+            fileOptions: FileOptions(
               cacheControl: '3600',
               upsert: false,
+              contentType: 'image/webp',
             ),
           );
       
       // 5. Obtener URL pública
+      // La URL será: /storage/v1/object/negocios/{entityId}/foto.webp
       final publicUrl = _client.storage
           .from(bucket)
           .getPublicUrl(storagePath);
@@ -109,50 +109,16 @@ class ImageService {
   }
   
   /// Sube una imagen de negocio y retorna la URL
+  /// Path: {businessId}/foto.webp
   Future<String> uploadBusinessImage({
     required File imageFile,
     required String businessId,
   }) async {
     return uploadImage(
       imageFile: imageFile,
-      folder: 'negocios/$businessId',
-      fileName: 'perfil',
+      entityId: businessId,
+      fileName: 'foto',
     );
-  }
-  
-  /// Sube una imagen de producto y retorna la URL
-  Future<String> uploadProductImage({
-    required File imageFile,
-    required String productId,
-  }) async {
-    return uploadImage(
-      imageFile: imageFile,
-      folder: 'productos/$productId',
-      fileName: 'principal',
-    );
-  }
-  
-  /// Sube múltiples imágenes de oferta (sucursal_producto)
-  Future<List<String>> uploadOfferImages({
-    required List<File> imageFiles,
-    required String sucursalProductoId,
-  }) async {
-    try {
-      final urls = <String>[];
-      
-      for (var i = 0; i < imageFiles.length; i++) {
-        final url = await uploadImage(
-          imageFile: imageFiles[i],
-          folder: 'ofertas/$sucursalProductoId',
-          fileName: 'imagen_${i + 1}',
-        );
-        urls.add(url);
-      }
-      
-      return urls;
-    } catch (e) {
-      throw ImageException('Error al subir imágenes de oferta: $e');
-    }
   }
   
   /// Elimina una imagen del bucket
@@ -172,6 +138,8 @@ class ImageService {
       }
       
       // Construir la ruta del archivo
+      // La URL es: /storage/v1/object/negocios/{id}/foto.webp
+      // pathSegments: ['storage', 'v1', 'object', 'negocios', '{id}', 'foto.webp']
       final storagePath = pathSegments.sublist(bucketIndex + 2).join('/');
       
       await _client.storage
@@ -194,6 +162,31 @@ class ImageService {
           .remove([path]);
     } catch (e) {
       throw ImageException('Error al eliminar imagen: $e');
+    }
+  }
+  
+  /// Elimina todas las imágenes de una entidad
+  Future<void> deleteEntityImages({
+    required String entityId,
+    String bucket = defaultBucket,
+  }) async {
+    try {
+      // Listar archivos en la carpeta del negocio
+      final files = await _client.storage
+          .from(bucket)
+          .list(path: entityId);
+      
+      if (files.isNotEmpty) {
+        final paths = files
+            .map((file) => '$entityId/${file.name}')
+            .toList();
+        
+        await _client.storage
+            .from(bucket)
+            .remove(paths);
+      }
+    } catch (e) {
+      throw ImageException('Error al eliminar imágenes de la entidad: $e');
     }
   }
   
