@@ -1,6 +1,7 @@
 // lib/features/business/domain/repositories/business_repository_interface.dart
 import '../entities/negocio.dart';
 import '../entities/usuario_negocio.dart';
+import '../entities/negocio_completo.dart';
 
 abstract class BusinessRepositoryInterface {
   // CRUD de negocios
@@ -48,4 +49,10 @@ abstract class BusinessRepositoryInterface {
     String? celular,
     String? imagen,
   });
+  
+  // NUEVO: Obtener negocio completo con sucursales, usuarios y productos
+  Future<NegocioCompleto> getBusinessComplete(String businessId);
+  
+  // NUEVO: Obtener todos los negocios completos de un usuario
+  Future<List<NegocioCompleto>> getBusinessesCompleteByUser(String userId);
 }

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:luranapp/core/theme/app_colors.dart';
 import 'package:luranapp/core/theme/app_text_styles.dart';
-import '../controllers/business_controller.dart';
+import '../controllers/business_registration_controller.dart';
 
-class BusinessStatusPage extends GetView<BusinessController> {
+class BusinessStatusPage extends GetView<BusinessRegistrationController> {
   final String businessId;
   
   const BusinessStatusPage({
@@ -95,9 +95,9 @@ class BusinessStatusPage extends GetView<BusinessController> {
               ),
               const SizedBox(height: 24),
               
-              // Estado del negocio
+              // Estado del negocio (usando datos temporales si existen)
               Obx(() {
-                final negocio = controller.selectedNegocio.value;
+                final negocio = controller.tempNegocio.value;
                 if (negocio == null) {
                   return const SizedBox.shrink();
                 }
@@ -143,6 +143,7 @@ class BusinessStatusPage extends GetView<BusinessController> {
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: AppColors.primary,
                   ),
                   child: const Text('Volver al inicio'),
                 ),
@@ -151,9 +152,10 @@ class BusinessStatusPage extends GetView<BusinessController> {
               
               TextButton(
                 onPressed: () {
-                  Get.back();
+                  // Navegar a la pantalla de perfil o dashboard
+                  Get.offAllNamed('/customer');
                 },
-                child: const Text('Ver mis negocios'),
+                child: const Text('Ir a mi perfil'),
               ),
             ],
           ),

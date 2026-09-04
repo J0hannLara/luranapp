@@ -1,17 +1,15 @@
 // lib/features/business/presentation/pages/register_business_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:luranapp/core/theme/app_colors.dart';
 import 'package:luranapp/core/theme/app_text_styles.dart';
-import 'package:luranapp/features/auth/presentation/controllers/auth_controller.dart';
-import '../controllers/business_controller.dart';
+import '../controllers/business_registration_controller.dart';
 
-class RegisterBusinessPage extends GetView<BusinessController> {
+class RegisterBusinessPage extends GetView<BusinessRegistrationController> {
   const RegisterBusinessPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authController = Get.find<AuthController>();
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Registra tu negocio'),
@@ -33,9 +31,9 @@ class RegisterBusinessPage extends GetView<BusinessController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Completa la información básica para empezar a publicar ofertas',
+              'Paso 1 de 2: Información básica',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.grey.shade600,
+                color: AppColors.primary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -43,7 +41,7 @@ class RegisterBusinessPage extends GetView<BusinessController> {
             
             // Formulario
             TextField(
-              controller: controller.nombreController,
+              controller: controller.nombreNegocioController,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
@@ -56,7 +54,7 @@ class RegisterBusinessPage extends GetView<BusinessController> {
             const SizedBox(height: 16),
             
             TextField(
-              controller: controller.descripcionController,
+              controller: controller.descripcionNegocioController,
               textCapitalization: TextCapitalization.sentences,
               maxLines: 3,
               textInputAction: TextInputAction.next,
@@ -71,12 +69,12 @@ class RegisterBusinessPage extends GetView<BusinessController> {
             const SizedBox(height: 16),
             
             TextField(
-              controller: controller.celularController,
+              controller: controller.celularNegocioController,
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) {
-                if (controller.canSubmit) {
-                  _submit(authController);
+                if (controller.isBusinessStepValid) {
+                  _continueToSucursal();
                 }
               },
               decoration: const InputDecoration(
@@ -112,47 +110,30 @@ class RegisterBusinessPage extends GetView<BusinessController> {
             
             const SizedBox(height: 24),
             
-            // Botón de registro
-            GetBuilder<BusinessController>(
+            // Indicador de progreso
+            _buildProgressIndicator(),
+            
+            const SizedBox(height: 24),
+            
+            // Botón de continuar
+            GetBuilder<BusinessRegistrationController>(
               id: 'business_form',
               builder: (controller) {
                 return ElevatedButton(
-                  onPressed: controller.canSubmit 
-                      ? () => _submit(authController)
+                  onPressed: controller.isBusinessStepValid 
+                      ? _continueToSucursal
                       : null,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: Obx(() {
-                    if (controller.isSubmitting.value) {
-                      return const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      );
-                    }
-                    if (controller.isUploadingImage.value) {
-                      return const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Subiendo imagen...'),
-                        ],
-                      );
-                    }
-                    return const Text('Registrar negocio');
-                  }),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Continuar'),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward),
+                    ],
+                  ),
                 );
               },
             ),
@@ -164,7 +145,7 @@ class RegisterBusinessPage extends GetView<BusinessController> {
   
   // Widget para seleccionar imagen
   Widget _buildImagePicker() {
-    return GetBuilder<BusinessController>(
+    return GetBuilder<BusinessRegistrationController>(
       id: 'business_image',
       builder: (controller) {
         return Column(
@@ -214,13 +195,20 @@ class RegisterBusinessPage extends GetView<BusinessController> {
                 ],
               ],
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Opcional: Agrega una imagen de tu negocio',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Colors.grey.shade500,
+              ),
+            ),
           ],
         );
       },
     );
   }
   
-  Widget _buildImagePreview(BusinessController controller) {
+  Widget _buildImagePreview(BusinessRegistrationController controller) {
     // Si hay imagen seleccionada
     if (controller.selectedImage.value != null) {
       return Image.file(
@@ -268,10 +256,78 @@ class RegisterBusinessPage extends GetView<BusinessController> {
     );
   }
   
-  void _submit(AuthController authController) {
-    final userId = authController.currentUser.value?.id;
-    if (userId != null) {
-      controller.registerBusiness(userId);
+  // Indicador de progreso (Paso 1 de 2)
+  Widget _buildProgressIndicator() {
+    return Row(
+      children: [
+        // Paso 1 (activo)
+        Expanded(
+          child: Column(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.business,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Negocio',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Línea conectora
+        Container(
+          width: 40,
+          height: 2,
+          color: Colors.grey.shade300,
+        ),
+        // Paso 2 (inactivo)
+        Expanded(
+          child: Column(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Sucursal',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  void _continueToSucursal() {
+    if (controller.validateBusinessStep()) {
+      Get.toNamed('/business/register/sucursal');
     }
   }
 }

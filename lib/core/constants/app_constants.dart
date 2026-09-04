@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'OfertaLocal';
+  static const String appName = 'Lurañapp';
   static const String appTagline = 'Encuentra ofertas antes de que se acaben.';
 
   static const int defaultPageSize = 20;

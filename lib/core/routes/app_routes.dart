@@ -6,7 +6,7 @@ abstract class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
-  static const onboarding = '/onboarding'; 
+  static const onboarding = '/onboarding';
 
   // Main shells
   static const customerMain = '/customer';
@@ -27,6 +27,13 @@ abstract class AppRoutes {
   static const businessProfile = '/business/profile';
   static const businessRegister = '/business/register';
   static const businessStatus = '/business/status/:id';
+  static const businessRegisterSucursal = '/business/register/sucursal';
+  static const myBusinesses = '/business/my-businesses';
+  static const businessDashboard = '/business/dashboard/:id';
+
+  // offer tabs
+  static const selectProduct = '/business/oferta/select/:businessId';
+  static const registerOffer = '/business/oferta/registrar/:businessId';
 
   // Shared detail pages
   static const offerDetail = '/offer/:id';

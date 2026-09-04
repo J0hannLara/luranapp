@@ -29,23 +29,23 @@ class ProfilePage extends GetView<AuthController> {
           // Header de perfil
           _buildProfileHeader(context),
           const SizedBox(height: 24),
-          
+
           // Tarjeta de estadísticas
           _buildStatsCard(),
           const SizedBox(height: 24),
-          
+
           // Sección de negocio
           _buildBusinessSection(),
           const SizedBox(height: 24),
-          
+
           // Opciones de cuenta
           _buildAccountSection(),
           const SizedBox(height: 24),
-          
+
           // Otras opciones
           _buildOtherSection(),
           const SizedBox(height: 24),
-          
+
           // Botón de cerrar sesión
           SizedBox(
             width: double.infinity,
@@ -64,7 +64,7 @@ class ProfilePage extends GetView<AuthController> {
       ),
     );
   }
-  
+
   // Header del perfil
   Widget _buildProfileHeader(BuildContext context) {
     return Column(
@@ -79,9 +79,7 @@ class ProfilePage extends GetView<AuthController> {
                 if (user?.username.isNotEmpty ?? false) {
                   return Text(
                     user!.username.substring(0, 1).toUpperCase(),
-                    style: AppTextStyles.h1.copyWith(
-                      color: AppColors.primary,
-                    ),
+                    style: AppTextStyles.h1.copyWith(color: AppColors.primary),
                   );
                 }
                 return const Icon(
@@ -101,11 +99,7 @@ class ProfilePage extends GetView<AuthController> {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: const Icon(
-                  Icons.edit,
-                  size: 16,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.edit, size: 16, color: Colors.white),
               ),
             ),
           ],
@@ -114,18 +108,18 @@ class ProfilePage extends GetView<AuthController> {
         Obx(
           () => Text(
             controller.currentUser.value?.username ?? 'Usuario',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(height: 4),
         Obx(
           () => Text(
             controller.currentUser.value?.email ?? '',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
           ),
         ),
         const SizedBox(height: 8),
@@ -146,10 +140,7 @@ class ProfilePage extends GetView<AuthController> {
                     user?.ciudad,
                     user?.pais,
                   ].where((e) => e != null && e.isNotEmpty).join(', '),
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 ),
               ],
             );
@@ -159,7 +150,7 @@ class ProfilePage extends GetView<AuthController> {
       ],
     );
   }
-  
+
   // Tarjeta de estadísticas
   Widget _buildStatsCard() {
     return Container(
@@ -180,115 +171,144 @@ class ProfilePage extends GetView<AuthController> {
       ),
     );
   }
-  
+
   Widget _buildStatItem(String value, String label) {
     return Column(
       children: [
-        Text(
-          value,
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.primary,
-          ),
-        ),
+        Text(value, style: AppTextStyles.h3.copyWith(color: AppColors.primary)),
         const SizedBox(height: 4),
         Text(
           label,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: Colors.grey.shade600,
+          style: AppTextStyles.bodySmall.copyWith(color: Colors.grey.shade600),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(width: 1, height: 32, color: Colors.grey.shade300);
+  }
+
+  // Sección de negocio
+  // En ProfilePage, actualizar la sección de negocio
+  Widget _buildBusinessSection() {
+    return Column(
+      children: [
+        // Card principal para registrar negocio
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withValues(alpha: 0.9),
+                AppColors.primary.withValues(alpha: 0.7),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Get.toNamed('/business/register');
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.add_business,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¿Tienes un negocio?',
+                            style: AppTextStyles.h3.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Publica tus ofertas y llega a más clientes',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Card para ver negocios existentes
+        Card(
+          margin: EdgeInsets.zero,
+          elevation: 0,
+          color: Colors.grey.shade50,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.storefront, color: AppColors.primary),
+            ),
+            title: const Text(
+              'Mis negocios',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: const Text(
+              'Administra tus negocios registrados',
+              style: TextStyle(fontSize: 12),
+            ),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () {
+              Get.toNamed('/business/my-businesses');
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         ),
       ],
     );
   }
-  
-  Widget _buildDivider() {
-    return Container(
-      width: 1,
-      height: 32,
-      color: Colors.grey.shade300,
-    );
-  }
-  
-  // Sección de negocio
-  Widget _buildBusinessSection() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.9),
-            AppColors.primary.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            Get.toNamed('/business/register');
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.storefront,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '¿Tienes un negocio?',
-                        style: AppTextStyles.h3.copyWith(
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Publica tus ofertas y llega a más clientes',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  
+
   // Sección de cuenta
   Widget _buildAccountSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Mi cuenta',
-          style: AppTextStyles.h3,
-        ),
+        Text('Mi cuenta', style: AppTextStyles.h3),
         const SizedBox(height: 8),
         _buildMenuItem(
           icon: Icons.receipt_long_outlined,
@@ -325,16 +345,13 @@ class ProfilePage extends GetView<AuthController> {
       ],
     );
   }
-  
+
   // Otras opciones
   Widget _buildOtherSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Otros',
-          style: AppTextStyles.h3,
-        ),
+        Text('Otros', style: AppTextStyles.h3),
         const SizedBox(height: 8),
         _buildMenuItem(
           icon: Icons.help_outline,
@@ -363,7 +380,7 @@ class ProfilePage extends GetView<AuthController> {
       ],
     );
   }
-  
+
   // Widget para items del menú
   Widget _buildMenuItem({
     required IconData icon,
@@ -375,39 +392,21 @@ class ProfilePage extends GetView<AuthController> {
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
       color: Colors.grey.shade50,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: AppColors.primary,
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        leading: Icon(icon, color: AppColors.primary),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          size: 20,
-        ),
+        trailing: const Icon(Icons.chevron_right, size: 20),
         onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
-  
+
   // Mostrar snackbar de "próximamente"
   void _showComingSoon(String feature) {
     Get.snackbar(

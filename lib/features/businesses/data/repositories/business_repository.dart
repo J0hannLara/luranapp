@@ -1,4 +1,7 @@
 // lib/features/business/data/repositories/business_repository.dart
+import 'package:luranapp/features/businesses/domain/entities/negocio_completo.dart';
+import 'package:luranapp/features/businesses/domain/entities/sucursal.dart';
+import 'package:luranapp/features/product/domain/entities/producto.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_repository.dart';
 import '../../../../core/database/supabase_client.dart';
@@ -8,9 +11,10 @@ import '../../domain/entities/negocio.dart';
 import '../../domain/entities/usuario_negocio.dart';
 import '../../domain/repositories/business_repository_interface.dart';
 
-class BusinessRepository extends DatabaseRepository implements BusinessRepositoryInterface {
+class BusinessRepository extends DatabaseRepository
+    implements BusinessRepositoryInterface {
   final SupabaseClient _client = SupabaseClientService.client;
-  
+
   @override
   Future<Negocio> createBusiness({
     required String nombre,
@@ -30,13 +34,13 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
           'created_at': DateTime.now().toIso8601String(),
         },
       );
-      
+
       return Negocio.fromJson(businessData);
     } catch (e) {
       throw DatabaseException('Error al crear negocio: $e');
     }
   }
-  
+
   @override
   Future<Negocio> getBusinessById(String id) async {
     try {
@@ -44,13 +48,13 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
         table: DatabaseTables.negocios,
         id: id,
       );
-      
+
       return Negocio.fromJson(businessData);
     } catch (e) {
       throw DatabaseException('Error al obtener negocio: $e');
     }
   }
-  
+
   @override
   Future<List<Negocio>> getBusinessesByUser(String userId) async {
     try {
@@ -61,17 +65,124 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
             negocios:negocios(*)
           ''')
           .eq('id_usuario', userId);
-      
+
       final businesses = response
-          .map((data) => Negocio.fromJson(data['negocios'] as Map<String, dynamic>))
+          .map(
+            (data) =>
+                Negocio.fromJson(data['negocios'] as Map<String, dynamic>),
+          )
           .toList();
-      
+
       return businesses;
     } catch (e) {
       throw DatabaseException('Error al obtener negocios del usuario: $e');
     }
   }
-  
+
+  @override
+  Future<NegocioCompleto> getBusinessComplete(String businessId) async {
+    try {
+      print('🔍 Iniciando getBusinessComplete para: $businessId');
+
+      // 1. Obtener negocio
+      final negocioData = await fetchById(
+        table: DatabaseTables.negocios,
+        id: businessId,
+      );
+      print('✅ Negocio obtenido: ${negocioData['nombre']}');
+
+      // 2. Obtener sucursales
+      final sucursalesResponse = await _client
+          .from(DatabaseTables.sucursales)
+          .select()
+          .eq('id_negocio', businessId);
+      print('✅ Sucursales obtenidas: ${sucursalesResponse.length}');
+
+      // 3. Obtener usuarios relacionados
+      final usuariosResponse = await _client
+          .from(DatabaseTables.usuariosNegocios)
+          .select()
+          .eq('id_negocio', businessId);
+      print('✅ Usuarios obtenidos: ${usuariosResponse.length}');
+
+      // 4. Obtener productos
+      final sucursalIds = sucursalesResponse
+          .map((s) => s['id'] as String)
+          .toList();
+      print('📍 Sucursal IDs: $sucursalIds');
+
+      List<Producto> productos = [];
+
+      if (sucursalIds.isNotEmpty) {
+        final ofertasResponse = await _client
+            .from(DatabaseTables.sucursalesProductos)
+            .select('id_producto')
+            .inFilter('id_sucursal', sucursalIds);
+        print('✅ Ofertas obtenidas: ${ofertasResponse.length}');
+
+        final productoIds = ofertasResponse
+            .map((o) => o['id_producto'] as String)
+            .toSet()
+            .toList();
+        print('📍 Producto IDs: $productoIds');
+
+        if (productoIds.isNotEmpty) {
+          final productosResponse = await _client
+              .from(DatabaseTables.productos)
+              .select()
+              .inFilter('id', productoIds);
+          print('✅ Productos obtenidos: ${productosResponse.length}');
+
+          productos = productosResponse
+              .map((data) => Producto.fromJson(data))
+              .toList();
+        }
+      }
+
+      final result = NegocioCompleto(
+        negocio: Negocio.fromJson(negocioData),
+        sucursales: sucursalesResponse
+            .map((data) => Sucursal.fromJson(data))
+            .toList(),
+        usuarios: usuariosResponse
+            .map((data) => UsuarioNegocio.fromJson(data))
+            .toList(),
+        productos: productos,
+      );
+
+      print(
+        '🎉 Resultado final: ${result.sucursales.length} sucursales, ${result.usuarios.length} usuarios, ${result.productos.length} productos',
+      );
+
+      return result;
+    } catch (e) {
+      print('❌ Error en getBusinessComplete: $e');
+      throw DatabaseException('Error al obtener negocio completo: $e');
+    }
+  }
+
+  @override
+  Future<List<NegocioCompleto>> getBusinessesCompleteByUser(
+    String userId,
+  ) async {
+    try {
+      // 1. Obtener negocios del usuario
+      final userBusinesses = await getBusinessesByUser(userId);
+
+      // 2. Para cada negocio, obtener información completa
+      final negociosCompletos = <NegocioCompleto>[];
+
+      for (final negocio in userBusinesses) {
+        final negocioCompleto = await getBusinessComplete(negocio.id);
+        negociosCompletos.add(negocioCompleto);
+      }
+
+      return negociosCompletos;
+    } catch (e) {
+      throw DatabaseException('Error al obtener negocios completos: $e');
+    }
+  }
+
   @override
   Future<Negocio> updateBusiness({
     required String id,
@@ -83,39 +194,36 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
   }) async {
     try {
       final updateData = <String, dynamic>{};
-      
+
       if (nombre != null) updateData['nombre'] = nombre;
       if (descripcion != null) updateData['descripcion'] = descripcion;
       if (celular != null) updateData['celular'] = celular;
       if (imagen != null) updateData['imagen'] = imagen;
       if (estado != null) updateData['estado'] = estado;
-      
+
       updateData['updated_at'] = DateTime.now().toIso8601String();
-      
+
       final businessData = await update(
         table: DatabaseTables.negocios,
         id: id,
         data: updateData,
       );
-      
+
       return Negocio.fromJson(businessData);
     } catch (e) {
       throw DatabaseException('Error al actualizar negocio: $e');
     }
   }
-  
+
   @override
   Future<void> deleteBusiness(String id) async {
     try {
-      await delete(
-        table: DatabaseTables.negocios,
-        id: id,
-      );
+      await delete(table: DatabaseTables.negocios, id: id);
     } catch (e) {
       throw DatabaseException('Error al eliminar negocio: $e');
     }
   }
-  
+
   @override
   Future<UsuarioNegocio> assignUserToBusiness({
     required String userId,
@@ -132,13 +240,13 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
           'created_at': DateTime.now().toIso8601String(),
         },
       );
-      
+
       return UsuarioNegocio.fromJson(relationData);
     } catch (e) {
       throw DatabaseException('Error al asignar usuario al negocio: $e');
     }
   }
-  
+
   @override
   Future<List<UsuarioNegocio>> getBusinessUsers(String businessId) async {
     try {
@@ -146,15 +254,13 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
           .from(DatabaseTables.usuariosNegocios)
           .select()
           .eq('id_negocio', businessId);
-      
-      return response
-          .map((data) => UsuarioNegocio.fromJson(data))
-          .toList();
+
+      return response.map((data) => UsuarioNegocio.fromJson(data)).toList();
     } catch (e) {
       throw DatabaseException('Error al obtener usuarios del negocio: $e');
     }
   }
-  
+
   @override
   Future<void> removeUserFromBusiness({
     required String userId,
@@ -170,7 +276,7 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
       throw DatabaseException('Error al eliminar usuario del negocio: $e');
     }
   }
-  
+
   @override
   Future<Negocio> registerBusiness({
     required String userId,
@@ -182,29 +288,32 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
     try {
       // Usar la función RPC crear_negocio
       // Esta función crea el negocio y automáticamente asigna al usuario como propietario
-      final response = await _client.rpc('crear_negocio', params: {
-        'p_nombre': nombre,
-        'p_descripcion': descripcion,
-        'p_celular': celular,
-        'p_imagen': imagen,
-      });
-      
+      final response = await _client.rpc(
+        'crear_negocio',
+        params: {
+          'p_nombre': nombre,
+          'p_descripcion': descripcion,
+          'p_celular': celular,
+          'p_imagen': imagen,
+        },
+      );
+
       if (response == null) {
         throw DatabaseException('No se pudo crear el negocio');
       }
-      
+
       // La respuesta puede ser un Map o una List con un Map
-      final businessData = response is List 
+      final businessData = response is List
           ? response.first as Map<String, dynamic>
           : response as Map<String, dynamic>;
-      
+
       return Negocio.fromJson(businessData);
     } catch (e) {
       if (e is DatabaseException) rethrow;
       throw DatabaseException('Error al registrar negocio: $e');
     }
   }
-  
+
   /// Método para verificar el estado de un negocio
   Future<String> getBusinessStatus(String businessId) async {
     try {
@@ -213,13 +322,13 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
           .select('estado')
           .eq('id', businessId)
           .single();
-      
+
       return response['estado'] as String;
     } catch (e) {
       throw DatabaseException('Error al obtener estado del negocio: $e');
     }
   }
-  
+
   /// Método para obtener negocios pendientes de aprobación (para admin)
   Future<List<Negocio>> getPendingBusinesses() async {
     try {
@@ -228,10 +337,8 @@ class BusinessRepository extends DatabaseRepository implements BusinessRepositor
           .select()
           .eq('estado', 'pendiente')
           .order('created_at', ascending: true);
-      
-      return response
-          .map((data) => Negocio.fromJson(data))
-          .toList();
+
+      return response.map((data) => Negocio.fromJson(data)).toList();
     } catch (e) {
       throw DatabaseException('Error al obtener negocios pendientes: $e');
     }
