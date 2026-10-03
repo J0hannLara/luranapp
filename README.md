@@ -77,7 +77,7 @@ text
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tu-usuario/luranapp.git
+git clone https://github.com/J0hannLara/luranapp.git
 cd luranapp
 
 # Instalar dependencias
